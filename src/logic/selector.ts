@@ -13,8 +13,10 @@
 import type {
   ResolutionRecord,
   GratingOverrides,
-  SearchResult,
 } from "../types/spectrometer";
+
+/** Grating codes grouped by blaze wavelength (nm). */
+export type BlazeCodeMap = Record<number, string[]>;
 
 /** Enriched result record carried through Card / Compare. */
 export interface EnrichedResult {
@@ -31,7 +33,7 @@ export interface EnrichedResult {
   /** Computed fields */
   recSlit: number;
   recRes: number;
-  codes: string[];
+  codesByBlaze: BlazeCodeMap;
   allSlits: [number, number][]; // sorted ascending by slit width
 }
 
@@ -41,24 +43,39 @@ export interface SelectorSearchResult {
 }
 
 /**
- * Look up grating codes for a resolution record via the override table.
- * Iterates all platform × blaze combinations and collects unique codes.
+ * Look up grating codes grouped by blaze wavelength.
+ * Includes ALL blaze wavelengths (not just in-range) so the UI can
+ * annotate out-of-range options while still showing them.
  */
-export function lookupGratingCodes(
+export function lookupGratingCodesByBlaze(
   record: ResolutionRecord,
   overrides: GratingOverrides,
-): string[] {
-  const codes: string[] = [];
-  for (const platform of record.platforms) {
-    for (const blaze of record.blazeWavelengths) {
+): BlazeCodeMap {
+  const result: BlazeCodeMap = {};
+  for (const blaze of record.blazeWavelengths) {
+    const codes: string[] = [];
+    for (const platform of record.platforms) {
       const key = `${platform}|${record.gratingGrooves}|${blaze}`;
       const found = overrides[key];
-      if (found) {
-        codes.push(...found);
-      }
+      if (found) codes.push(...found);
+    }
+    if (codes.length > 0) {
+      result[blaze] = [...new Set(codes)];
     }
   }
-  return [...new Set(codes)];
+  return result;
+}
+
+/** Returns true if a blaze wavelength is inside the user's search window. */
+export function blazeInRange(blaze: number, wlMin: number, wlMax: number): boolean {
+  return blaze >= wlMin && blaze <= wlMax;
+}
+
+/** Count how many blaze wavelengths in this result fall within the search range. */
+function countInRangeBlazes(r: { codesByBlaze: BlazeCodeMap }, wlMin: number, wlMax: number): number {
+  return Object.keys(r.codesByBlaze)
+    .map(Number)
+    .filter(b => blazeInRange(b, wlMin, wlMax)).length;
 }
 
 /**
@@ -105,8 +122,8 @@ export function search(
 
     if (slitEntries.length === 0) continue;
 
-    // Look up grating codes
-    const codes = lookupGratingCodes(r, overrides);
+    // Look up grating codes grouped by blaze wavelength (all blazes)
+    const codesByBlaze = lookupGratingCodesByBlaze(r, overrides);
 
     // Build the enriched base record
     const base = {
@@ -118,7 +135,7 @@ export function search(
       bandwidthNm: r.bandwidthNm,
       selectableRange: r.selectableRange,
       model: r.model,
-      codes,
+      codesByBlaze,
       allSlits: slitEntries,
     };
 
@@ -142,11 +159,25 @@ export function search(
     }
   }
 
-  // Sort matches: largest slit first (best throughput), then best resolution
-  matches.sort((a, b) => b.recSlit - a.recSlit || a.recRes - b.recRes);
+  // Sort matches: in-range blaze first, then largest slit (best throughput), then best resolution
+  matches.sort((a, b) => {
+    const aIn = countInRangeBlazes(a, wlMin, wlMax);
+    const bIn = countInRangeBlazes(b, wlMin, wlMax);
+    // Configs with any in-range blaze come first
+    if ((aIn > 0) !== (bIn > 0)) return bIn > 0 ? 1 : -1;
+    // Among those, more in-range blazes is better
+    if (aIn !== bIn) return bIn - aIn;
+    // Then by throughput and resolution
+    return b.recSlit - a.recSlit || a.recRes - b.recRes;
+  });
 
-  // Sort near misses: closest achievable resolution first
-  nearMisses.sort((a, b) => a.recRes - b.recRes);
+  // Sort near misses: in-range blaze first, then closest achievable resolution
+  nearMisses.sort((a, b) => {
+    const aIn = countInRangeBlazes(a, wlMin, wlMax);
+    const bIn = countInRangeBlazes(b, wlMin, wlMax);
+    if ((aIn > 0) !== (bIn > 0)) return bIn > 0 ? 1 : -1;
+    return a.recRes - b.recRes;
+  });
 
   return { matches, nearMisses };
 }

@@ -4,12 +4,15 @@
  * slit bar chart, and grating codes. Includes a "Compare" checkbox.
  */
 import type { EnrichedResult } from "../logic/selector";
+import { blazeInRange } from "../logic/selector";
 import { BRAND, PRODUCT_COLORS } from "../brand";
 import SlitBar from "./SlitBar";
 
 interface ResultCardProps {
   result: EnrichedResult;
   maxRes: number;
+  wlMin: number;
+  wlMax: number;
   rank: number | null;
   isNearMiss: boolean;
   isCompared: boolean;
@@ -19,6 +22,8 @@ interface ResultCardProps {
 export default function ResultCard({
   result: r,
   maxRes,
+  wlMin,
+  wlMax,
   rank,
   isNearMiss,
   isCompared,
@@ -27,6 +32,14 @@ export default function ResultCard({
   const name = r.evolveNames.join(" / ");
   const model = r.model ? ` (${r.model})` : "";
   const color = PRODUCT_COLORS[r.evolveNames[0]] ?? BRAND.teal;
+
+  // Sort blazes: in-range first, then out-of-range
+  const sortedBlazes = [...r.blazeWavelengths].sort((a, b) => {
+    const aIn = blazeInRange(a, wlMin, wlMax);
+    const bIn = blazeInRange(b, wlMin, wlMax);
+    if (aIn !== bIn) return aIn ? -1 : 1;
+    return a - b;
+  });
 
   return (
     <div
@@ -159,7 +172,22 @@ export default function ResultCard({
           </div>
           <div style={{ fontWeight: 600 }}>{r.gratingGrooves} g/mm</div>
           <div style={{ color: "#64748b", fontSize: 11 }}>
-            Blaze: {r.blazeWavelengths.join(", ")} nm
+            Blaze:{" "}
+            {sortedBlazes.map((b, i) => {
+              const inRange = blazeInRange(b, wlMin, wlMax);
+              return (
+                <span key={b}>
+                  {i > 0 && ", "}
+                  <span style={{
+                    color: inRange ? "#065f46" : "#9ca3af",
+                    fontWeight: inRange ? 600 : 400,
+                    fontStyle: inRange ? "normal" : "italic",
+                  }}>
+                    {b}{!inRange && "*"}
+                  </span>
+                </span>
+              );
+            })}{" "}nm
           </div>
         </div>
         <div style={{ background: "#f8fafc", borderRadius: 6, padding: "6px 10px" }}>
@@ -192,40 +220,65 @@ export default function ResultCard({
           </div>
           <SlitBar slits={r.allSlits} maxRes={maxRes} recSlit={r.recSlit} />
         </div>
-        {r.codes.length > 0 && (
+        {Object.keys(r.codesByBlaze).length > 0 && (
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 4 }}>
               GRATING CODES
             </div>
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 3,
-                justifyContent: "flex-end",
-              }}
-            >
-              {r.codes.slice(0, 5).map((code, i) => (
-                <span
-                  key={i}
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: "2px 6px",
-                    borderRadius: 4,
-                    background: "#eef2ff",
-                    color: "#4338ca",
-                  }}
-                >
-                  {code}
-                </span>
-              ))}
-              {r.codes.length > 5 && (
-                <span style={{ fontSize: 10, color: "#94a3b8" }}>
-                  +{r.codes.length - 5}
-                </span>
-              )}
-            </div>
+            {Object.entries(r.codesByBlaze)
+              .sort(([a], [b]) => {
+                // In-range blazes first, then by wavelength
+                const aIn = blazeInRange(Number(a), wlMin, wlMax);
+                const bIn = blazeInRange(Number(b), wlMin, wlMax);
+                if (aIn !== bIn) return aIn ? -1 : 1;
+                return Number(a) - Number(b);
+              })
+              .map(([blaze, codes]) => {
+                const inRange = blazeInRange(Number(blaze), wlMin, wlMax);
+                return (
+                  <div
+                    key={blaze}
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 3,
+                      justifyContent: "flex-end",
+                      alignItems: "center",
+                      marginBottom: 2,
+                      opacity: inRange ? 1 : 0.55,
+                    }}
+                  >
+                    <span style={{
+                      fontSize: 10,
+                      color: inRange ? "#065f46" : "#9ca3af",
+                      fontWeight: inRange ? 600 : 400,
+                      marginRight: 2,
+                    }}>
+                      {blaze} nm{!inRange && " (outside range)"}:
+                    </span>
+                    {codes.slice(0, 5).map((code, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: "2px 6px",
+                          borderRadius: 4,
+                          background: inRange ? "#eef2ff" : "#f3f4f6",
+                          color: inRange ? "#4338ca" : "#9ca3af",
+                        }}
+                      >
+                        {code}
+                      </span>
+                    ))}
+                    {codes.length > 5 && (
+                      <span style={{ fontSize: 10, color: "#94a3b8" }}>
+                        +{codes.length - 5}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
           </div>
         )}
       </div>

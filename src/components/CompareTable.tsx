@@ -4,17 +4,22 @@
  * and grating codes.
  */
 import type { EnrichedResult } from "../logic/selector";
+import { blazeInRange } from "../logic/selector";
 import { BRAND, PRODUCT_COLORS } from "../brand";
 
 interface CompareTableProps {
   items: EnrichedResult[];
   maxRes: number;
+  wlMin: number;
+  wlMax: number;
   onClear: () => void;
 }
 
 export default function CompareTable({
   items,
   maxRes,
+  wlMin,
+  wlMax,
   onClear,
 }: CompareTableProps) {
   if (items.length === 0) return null;
@@ -115,7 +120,16 @@ export default function CompareTable({
                     {r.model ? ` (${r.model})` : ""}
                   </td>
                   <td style={{ padding: 8, whiteSpace: "nowrap" }}>
-                    {r.gratingGrooves}g blz {r.blazeWavelengths[0]}
+                    {r.gratingGrooves}g blz{" "}
+                    {r.blazeWavelengths
+                      .sort((a, b) => {
+                        const aIn = blazeInRange(a, wlMin, wlMax);
+                        const bIn = blazeInRange(b, wlMin, wlMax);
+                        if (aIn !== bIn) return aIn ? -1 : 1;
+                        return a - b;
+                      })
+                      .map(b => blazeInRange(b, wlMin, wlMax) ? String(b) : `${b}*`)
+                      .join("/")}
                   </td>
                   <td style={{ padding: 8, textAlign: "center" }}>
                     {r.bandwidthNm}
@@ -166,7 +180,19 @@ export default function CompareTable({
                     );
                   })}
                   <td style={{ padding: 8, fontSize: 11 }}>
-                    {r.codes.slice(0, 3).join(", ")}
+                    {Object.entries(r.codesByBlaze)
+                      .sort(([a], [b]) => {
+                        const aIn = blazeInRange(Number(a), wlMin, wlMax);
+                        const bIn = blazeInRange(Number(b), wlMin, wlMax);
+                        if (aIn !== bIn) return aIn ? -1 : 1;
+                        return Number(a) - Number(b);
+                      })
+                      .map(([blaze, codes]) => {
+                        const inRange = blazeInRange(Number(blaze), wlMin, wlMax);
+                        const label = inRange ? `${blaze}nm` : `${blaze}nm*`;
+                        return `${label}: ${codes.slice(0, 3).join(", ")}`;
+                      })
+                      .join(" | ")}
                   </td>
                 </tr>
               );

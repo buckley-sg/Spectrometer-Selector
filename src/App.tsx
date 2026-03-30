@@ -139,6 +139,8 @@ export default function App() {
         <CompareTable
           items={compareItems}
           maxRes={maxResNum}
+          wlMin={Number(wlMin)}
+          wlMax={Number(wlMax)}
           onClear={() => setCompareMap({})}
         />
       )}
@@ -177,6 +179,8 @@ export default function App() {
                       key={id}
                       result={r}
                       maxRes={maxResNum}
+                      wlMin={Number(wlMin)}
+                      wlMax={Number(wlMax)}
                       rank={i + 1}
                       isNearMiss={false}
                       isCompared={compareIds.has(id)}
@@ -267,6 +271,8 @@ export default function App() {
                         key={id}
                         result={r}
                         maxRes={maxResNum}
+                        wlMin={Number(wlMin)}
+                        wlMax={Number(wlMax)}
                         rank={null}
                         isNearMiss={true}
                         isCompared={compareIds.has(id)}
