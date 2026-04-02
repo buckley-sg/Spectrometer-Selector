@@ -16,7 +16,7 @@ interface SearchFormProps {
 const FIELDS = [
   { label: "Min Wavelength (nm)", placeholder: "e.g. 200", key: "wlMin" },
   { label: "Max Wavelength (nm)", placeholder: "e.g. 550", key: "wlMax" },
-  { label: "Max Resolution (nm)", placeholder: "e.g. 0.5", key: "maxRes" },
+  { label: "Target Resolution (nm)", placeholder: "e.g. 0.5", key: "maxRes" },
 ] as const;
 
 export default function SearchForm({

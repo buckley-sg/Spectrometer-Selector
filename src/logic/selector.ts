@@ -200,16 +200,18 @@ export function search(
     }
   }
 
-  // Sort matches: in-range blaze first, then largest slit (best throughput), then best resolution
+  // Sort matches: largest slit (throughput) first, then in-range blaze count, then resolution.
+  // Throughput is the primary concern — a 60µm slit with 0.9nm resolution is always
+  // preferable to a 10µm slit with 1.0nm resolution, regardless of blaze alignment.
   matches.sort((a, b) => {
+    // Primary: largest recommended slit (best throughput)
+    if (a.recSlit !== b.recSlit) return b.recSlit - a.recSlit;
+    // Secondary: more in-range blazes is better
     const aIn = countInRangeBlazes(a, wlMin, wlMax);
     const bIn = countInRangeBlazes(b, wlMin, wlMax);
-    // Configs with any in-range blaze come first
-    if ((aIn > 0) !== (bIn > 0)) return bIn > 0 ? 1 : -1;
-    // Among those, more in-range blazes is better
     if (aIn !== bIn) return bIn - aIn;
-    // Then by throughput and resolution
-    return b.recSlit - a.recSlit || a.recRes - b.recRes;
+    // Tertiary: better resolution as tiebreaker
+    return a.recRes - b.recRes;
   });
 
   // Sort near misses: in-range blaze first, then closest achievable resolution
