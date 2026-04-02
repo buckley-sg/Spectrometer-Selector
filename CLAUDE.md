@@ -86,6 +86,33 @@ The `.claude/launch.json` is configured to start the dev server on port 3003 usi
 npx tsc --noEmit
 ```
 
+### Building the Desktop App (Electron)
+
+The app can be packaged as a standalone Windows desktop application called "Evolve Selector" using Electron + electron-builder.
+
+```bash
+npm run build:electron
+```
+
+This runs the full pipeline: TypeScript check → Vite production build → Electron TypeScript compile → electron-builder packaging.
+
+**Output** in `release/`:
+- `Evolve Selector Setup 1.0.0.exe` — NSIS installer (~83 MB), installs to user's AppData
+- `EvolveSelector-1.0.0-portable.exe` — portable exe (~83 MB), runs without installation
+
+**Distribution**: Share via OneDrive link (email providers block `.exe` attachments). The portable exe is the easiest option — no installation required.
+
+**Note**: The exe is unsigned, so Windows SmartScreen will show a warning on first launch. The recipient clicks "More info" → "Run anyway". A code-signing certificate (~$200-400/year) would eliminate this.
+
+**Bumping the version**: Update `"version"` in `package.json` before building. The version appears in the installer filename and the app's About info.
+
+### Electron Architecture
+- `electron-src/main.ts` → compiled to `electron/main.cjs` (CommonJS required because `package.json` has `"type": "module"`)
+- `electron-src/preload.ts` → compiled to `electron/preload.cjs`
+- No menu bar, branded window with Evolve icon
+- In dev: `npm run dev:electron` builds and launches Electron locally
+- `electron/` output is gitignored; `release/` output is gitignored
+
 ## Instructions for Claude
 At the end of every task or work session, ask Steve: **"Is there anything from this session you'd like me to add to CLAUDE.md so I remember it next time?"**
 
