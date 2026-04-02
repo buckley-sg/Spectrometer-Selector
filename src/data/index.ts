@@ -7,11 +7,13 @@ import type {
   ResolutionRecord,
   SlitResolutions,
   GratingOverrides,
+  CodeRangeLookup,
   EvolveMap,
 } from "../types/spectrometer";
 
 import compactRecords from "./resolutionRecords.json";
 import overrides from "./gratingOverrides.json";
+import namingLookup from "./namingRecords.json";
 
 /** Convert a compact record to the full typed shape. */
 function expand(c: CompactResolutionRecord): ResolutionRecord {
@@ -37,10 +39,13 @@ function expand(c: CompactResolutionRecord): ResolutionRecord {
 
 /** All 68 resolution records, fully typed. */
 export const resolutionRecords: ResolutionRecord[] =
-  (compactRecords as CompactResolutionRecord[]).map(expand);
+  (compactRecords as unknown as CompactResolutionRecord[]).map(expand);
 
 /** Grating override lookup: "PLATFORM|grooves|blaze" → grating codes */
 export const gratingOverrides: GratingOverrides = overrides as GratingOverrides;
+
+/** Grating code → [wlMin, wlMax] wavelength window lookup */
+export const codeRanges: CodeRangeLookup = namingLookup as unknown as CodeRangeLookup;
 
 /** OtO platform code → Evolve product name */
 export const evolveMap: EvolveMap = {

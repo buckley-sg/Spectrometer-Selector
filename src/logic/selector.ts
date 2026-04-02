@@ -13,10 +13,12 @@
 import type {
   ResolutionRecord,
   GratingOverrides,
+  CodeInfo,
+  CodeRangeLookup,
 } from "../types/spectrometer";
 
 /** Grating codes grouped by blaze wavelength (nm). */
-export type BlazeCodeMap = Record<number, string[]>;
+export type BlazeCodeMap = Record<number, CodeInfo[]>;
 
 /** Enriched result record carried through Card / Compare. */
 export interface EnrichedResult {
@@ -43,27 +45,45 @@ export interface SelectorSearchResult {
 }
 
 /**
- * Look up grating codes grouped by blaze wavelength.
- * Includes ALL blaze wavelengths (not just in-range) so the UI can
- * annotate out-of-range options while still showing them.
+ * Look up grating codes grouped by blaze wavelength, enriched with
+ * each code's configured wavelength window from the naming table.
+ * Includes ALL blaze wavelengths so the UI can annotate out-of-range ones.
  */
 export function lookupGratingCodesByBlaze(
   record: ResolutionRecord,
   overrides: GratingOverrides,
+  codeRangeLookup: CodeRangeLookup,
 ): BlazeCodeMap {
   const result: BlazeCodeMap = {};
   for (const blaze of record.blazeWavelengths) {
-    const codes: string[] = [];
+    const codeStrs: string[] = [];
     for (const platform of record.platforms) {
       const key = `${platform}|${record.gratingGrooves}|${blaze}`;
       const found = overrides[key];
-      if (found) codes.push(...found);
+      if (found) codeStrs.push(...found);
     }
-    if (codes.length > 0) {
-      result[blaze] = [...new Set(codes)];
+    const unique = [...new Set(codeStrs)];
+    if (unique.length > 0) {
+      result[blaze] = unique.map((code) => {
+        const range = codeRangeLookup[code];
+        return {
+          code,
+          wlMin: range ? range[0] : null,
+          wlMax: range ? range[1] : null,
+        };
+      });
     }
   }
   return result;
+}
+
+/**
+ * Format a part number: XXNNNN-SSS-GGGG
+ * XX = platform code, NNNN = literal placeholder, SSS = slit zero-padded, GGGG = grating code
+ */
+export function formatPartNumber(platform: string, slitUm: number, gratingCode: string): string {
+  const sss = String(slitUm).padStart(3, "0");
+  return `${platform}xxxx-${sss}-${gratingCode}`;
 }
 
 /** Returns true if a blaze wavelength is inside the user's search window. */
@@ -100,6 +120,7 @@ export function search(
   maxRes: number,
   records: ResolutionRecord[],
   overrides: GratingOverrides,
+  codeRangeLookup: CodeRangeLookup = {},
 ): SelectorSearchResult {
   const requiredBandwidth = wlMax - wlMin;
   const matches: EnrichedResult[] = [];
@@ -123,7 +144,7 @@ export function search(
     if (slitEntries.length === 0) continue;
 
     // Look up grating codes grouped by blaze wavelength (all blazes)
-    const codesByBlaze = lookupGratingCodesByBlaze(r, overrides);
+    const codesByBlaze = lookupGratingCodesByBlaze(r, overrides, codeRangeLookup);
 
     // Build the enriched base record
     const base = {

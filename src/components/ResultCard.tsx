@@ -4,7 +4,8 @@
  * slit bar chart, and grating codes. Includes a "Compare" checkbox.
  */
 import type { EnrichedResult } from "../logic/selector";
-import { blazeInRange } from "../logic/selector";
+import { blazeInRange, formatPartNumber } from "../logic/selector";
+import type { CodeInfo } from "../types/spectrometer";
 import { BRAND, PRODUCT_COLORS } from "../brand";
 import SlitBar from "./SlitBar";
 
@@ -206,7 +207,55 @@ export default function ResultCard({
         </div>
       </div>
 
-      {/* Footer: slit bar + grating codes */}
+      {/* Part numbers — prominent display */}
+      {Object.keys(r.codesByBlaze).length > 0 && (
+        <div style={{
+          background: "#f0fdf4",
+          border: "1px solid #bbf7d0",
+          borderRadius: 6,
+          padding: "8px 12px",
+          marginBottom: 8,
+        }}>
+          <div style={{ fontSize: 10, color: "#065f46", fontWeight: 600, marginBottom: 4 }}>
+            PART NUMBERS (at {r.recSlit} µm slit)
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {Object.entries(r.codesByBlaze)
+              .sort(([a], [b]) => {
+                const aIn = blazeInRange(Number(a), wlMin, wlMax);
+                const bIn = blazeInRange(Number(b), wlMin, wlMax);
+                if (aIn !== bIn) return aIn ? -1 : 1;
+                return Number(a) - Number(b);
+              })
+              .flatMap(([blaze, codes]: [string, CodeInfo[]]) => {
+                const inRange = blazeInRange(Number(blaze), wlMin, wlMax);
+                return r.platforms.flatMap((platform) =>
+                  codes.map((ci) => ({ platform, ci, blaze, inRange }))
+                );
+              })
+              .map(({ platform, ci, blaze, inRange }, i) => (
+                <span
+                  key={`${platform}-${ci.code}-${blaze}-${i}`}
+                  style={{
+                    fontFamily: "'Courier New', Consolas, monospace",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    padding: "3px 8px",
+                    borderRadius: 4,
+                    background: inRange ? BRAND.navy : "#e5e7eb",
+                    color: inRange ? "white" : "#9ca3af",
+                    opacity: inRange ? 1 : 0.6,
+                  }}
+                  title={inRange ? undefined : "Blaze outside search range"}
+                >
+                  {formatPartNumber(platform, r.recSlit, ci.code)}
+                </span>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Footer: slit bar + grating codes with wavelength ranges */}
       <div
         style={{
           display: "flex",
@@ -227,13 +276,12 @@ export default function ResultCard({
             </div>
             {Object.entries(r.codesByBlaze)
               .sort(([a], [b]) => {
-                // In-range blazes first, then by wavelength
                 const aIn = blazeInRange(Number(a), wlMin, wlMax);
                 const bIn = blazeInRange(Number(b), wlMin, wlMax);
                 if (aIn !== bIn) return aIn ? -1 : 1;
                 return Number(a) - Number(b);
               })
-              .map(([blaze, codes]) => {
+              .map(([blaze, codes]: [string, CodeInfo[]]) => {
                 const inRange = blazeInRange(Number(blaze), wlMin, wlMax);
                 return (
                   <div
@@ -256,7 +304,7 @@ export default function ResultCard({
                     }}>
                       {blaze} nm{!inRange && " (outside range)"}:
                     </span>
-                    {codes.slice(0, 5).map((code, i) => (
+                    {codes.slice(0, 5).map((ci, i) => (
                       <span
                         key={i}
                         style={{
@@ -268,7 +316,12 @@ export default function ResultCard({
                           color: inRange ? "#4338ca" : "#9ca3af",
                         }}
                       >
-                        {code}
+                        {ci.code}
+                        {ci.wlMin != null && ci.wlMax != null && (
+                          <span style={{ fontWeight: 400, fontSize: 10, marginLeft: 2 }}>
+                            ({ci.wlMin}–{ci.wlMax})
+                          </span>
+                        )}
                       </span>
                     ))}
                     {codes.length > 5 && (

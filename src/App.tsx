@@ -5,7 +5,7 @@
  * and comparison table.
  */
 import { useState, useMemo, useCallback } from "react";
-import { resolutionRecords, gratingOverrides } from "./data";
+import { resolutionRecords, gratingOverrides, codeRanges } from "./data";
 import { search, recordId, type EnrichedResult } from "./logic/selector";
 import { BRAND } from "./brand";
 import SearchForm from "./components/SearchForm";
@@ -58,7 +58,7 @@ export default function App() {
     if (isNaN(mn) || isNaN(mx) || isNaN(mr) || mn >= mx || mr <= 0) {
       return null;
     }
-    return search(mn, mx, mr, resolutionRecords, gratingOverrides);
+    return search(mn, mx, mr, resolutionRecords, gratingOverrides, codeRanges);
   }, [wlMin, wlMax, maxRes]);
 
   const bandwidth = Number(wlMax) - Number(wlMin);

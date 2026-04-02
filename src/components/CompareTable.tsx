@@ -4,7 +4,8 @@
  * and grating codes.
  */
 import type { EnrichedResult } from "../logic/selector";
-import { blazeInRange } from "../logic/selector";
+import { blazeInRange, formatPartNumber } from "../logic/selector";
+import type { CodeInfo } from "../types/spectrometer";
 import { BRAND, PRODUCT_COLORS } from "../brand";
 
 interface CompareTableProps {
@@ -97,6 +98,7 @@ export default function CompareTable({
                 </th>
               ))}
               <Th align="left">CODES</Th>
+              <Th align="left">PART #</Th>
             </tr>
           </thead>
           <tbody>
@@ -187,12 +189,32 @@ export default function CompareTable({
                         if (aIn !== bIn) return aIn ? -1 : 1;
                         return Number(a) - Number(b);
                       })
-                      .map(([blaze, codes]) => {
+                      .map(([blaze, codes]: [string, CodeInfo[]]) => {
                         const inRange = blazeInRange(Number(blaze), wlMin, wlMax);
                         const label = inRange ? `${blaze}nm` : `${blaze}nm*`;
-                        return `${label}: ${codes.slice(0, 3).join(", ")}`;
+                        const codeStrs = codes.slice(0, 3).map((ci) => {
+                          const range = ci.wlMin != null && ci.wlMax != null
+                            ? ` (${ci.wlMin}–${ci.wlMax})`
+                            : "";
+                          return `${ci.code}${range}`;
+                        });
+                        return `${label}: ${codeStrs.join(", ")}`;
                       })
                       .join(" | ")}
+                  </td>
+                  <td style={{
+                    padding: 8,
+                    fontSize: 10,
+                    fontFamily: "'Courier New', Consolas, monospace",
+                    whiteSpace: "nowrap",
+                  }}>
+                    {Object.entries(r.codesByBlaze)
+                      .filter(([blaze]) => blazeInRange(Number(blaze), wlMin, wlMax))
+                      .flatMap(([, codes]: [string, CodeInfo[]]) =>
+                        r.platforms.map((p) => formatPartNumber(p, r.recSlit, codes[0].code))
+                      )
+                      .slice(0, 3)
+                      .join(", ")}
                   </td>
                 </tr>
               );

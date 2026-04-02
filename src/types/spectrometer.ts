@@ -75,6 +75,19 @@ export interface NearMissResult {
   gratingCodes: string[];
 }
 
+// ── Grating code with wavelength range ──────────────────────────────────
+
+/** A single grating code enriched with its configured wavelength window. */
+export interface CodeInfo {
+  code: string;
+  wlMin: number | null;
+  wlMax: number | null;
+}
+
+// ── Code range lookup (code → [wlMin, wlMax]) ─────────────────────────
+
+export type CodeRangeLookup = Record<string, [number, number]>;
+
 // ── Evolve product name map ─────────────────────────────────────────────
 
 export type EvolveMap = Record<string, string>;
