@@ -3,8 +3,17 @@
  * Shows product name, grating info, bandwidth, range, recommended slit,
  * slit bar chart, and grating codes. Includes a "Compare" checkbox.
  */
+/**
+ * ResultCard — displays one search result (exact match or near miss).
+ *
+ * Layout:
+ *   - Header: rank badge, product name, recommended slit/resolution, compare checkbox
+ *   - Info grid: grating (g/mm + blazes), bandwidth, selectable range
+ *   - Part numbers: XXxxxx-SSS-GGGG badges, in-range prominent, out-of-range faded
+ *   - Footer: slit bar chart + grating codes grouped by blaze with wavelength ranges
+ */
 import type { EnrichedResult } from "../logic/selector";
-import { blazeInRange, formatPartNumber } from "../logic/selector";
+import { blazeInRange, blazeSortComparator, formatPartNumber } from "../logic/selector";
 import type { CodeInfo } from "../types/spectrometer";
 import { BRAND, PRODUCT_COLORS } from "../brand";
 import SlitBar from "./SlitBar";
@@ -34,13 +43,8 @@ export default function ResultCard({
   const model = r.model ? ` (${r.model})` : "";
   const color = PRODUCT_COLORS[r.evolveNames[0]] ?? BRAND.teal;
 
-  // Sort blazes: in-range first, then out-of-range
-  const sortedBlazes = [...r.blazeWavelengths].sort((a, b) => {
-    const aIn = blazeInRange(a, wlMin, wlMax);
-    const bIn = blazeInRange(b, wlMin, wlMax);
-    if (aIn !== bIn) return aIn ? -1 : 1;
-    return a - b;
-  });
+  const blazeSort = blazeSortComparator(wlMin, wlMax);
+  const sortedBlazes = [...r.blazeWavelengths].sort((a, b) => blazeSort(String(a), String(b)));
 
   return (
     <div
@@ -221,12 +225,7 @@ export default function ResultCard({
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
             {Object.entries(r.codesByBlaze)
-              .sort(([a], [b]) => {
-                const aIn = blazeInRange(Number(a), wlMin, wlMax);
-                const bIn = blazeInRange(Number(b), wlMin, wlMax);
-                if (aIn !== bIn) return aIn ? -1 : 1;
-                return Number(a) - Number(b);
-              })
+              .sort(([a], [b]) => blazeSort(a, b))
               .flatMap(([blaze, codes]: [string, CodeInfo[]]) => {
                 const inRange = blazeInRange(Number(blaze), wlMin, wlMax);
                 return r.platforms.flatMap((platform) =>
@@ -275,12 +274,7 @@ export default function ResultCard({
               GRATING CODES
             </div>
             {Object.entries(r.codesByBlaze)
-              .sort(([a], [b]) => {
-                const aIn = blazeInRange(Number(a), wlMin, wlMax);
-                const bIn = blazeInRange(Number(b), wlMin, wlMax);
-                if (aIn !== bIn) return aIn ? -1 : 1;
-                return Number(a) - Number(b);
-              })
+              .sort(([a], [b]) => blazeSort(a, b))
               .map(([blaze, codes]: [string, CodeInfo[]]) => {
                 const inRange = blazeInRange(Number(blaze), wlMin, wlMax);
                 return (

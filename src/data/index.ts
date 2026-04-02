@@ -1,6 +1,11 @@
 /**
- * Data loader — imports the raw JSON and normalises compact keys
- * into the full ResolutionRecord shape used by the rest of the app.
+ * Data loader — imports the raw JSON data files and normalises compact
+ * keys into the full ResolutionRecord shape used by the rest of the app.
+ *
+ * Three data files are loaded:
+ *   - resolutionRecords.json  — 68 optical bench × grating configurations
+ *   - gratingOverrides.json   — "platform|grooves|blaze" → grating code lookup
+ *   - namingRecords.json      — grating code → [wlMin, wlMax] wavelength window
  */
 import type {
   CompactResolutionRecord,
@@ -8,7 +13,6 @@ import type {
   SlitResolutions,
   GratingOverrides,
   CodeRangeLookup,
-  EvolveMap,
 } from "../types/spectrometer";
 
 import compactRecords from "./resolutionRecords.json";
@@ -17,7 +21,6 @@ import namingLookup from "./namingRecords.json";
 
 /** Convert a compact record to the full typed shape. */
 function expand(c: CompactResolutionRecord): ResolutionRecord {
-  // Convert string-keyed slit map {"10": 0.2} → number-keyed {10: 0.2}
   const slitResolutions: SlitResolutions = {};
   for (const [k, v] of Object.entries(c.sl)) {
     slitResolutions[Number(k)] = v;
@@ -41,25 +44,8 @@ function expand(c: CompactResolutionRecord): ResolutionRecord {
 export const resolutionRecords: ResolutionRecord[] =
   (compactRecords as unknown as CompactResolutionRecord[]).map(expand);
 
-/** Grating override lookup: "PLATFORM|grooves|blaze" → grating codes */
+/** Grating override lookup: "PLATFORM|grooves|blaze" → grating codes. */
 export const gratingOverrides: GratingOverrides = overrides as GratingOverrides;
 
-/** Grating code → [wlMin, wlMax] wavelength window lookup */
+/** Grating code → [wlMin, wlMax] wavelength window (257 entries). */
 export const codeRanges: CodeRangeLookup = namingLookup as unknown as CodeRangeLookup;
-
-/** OtO platform code → Evolve product name */
-export const evolveMap: EvolveMap = {
-  SE: "SmartEngine",
-  EE: "EagleEye",
-  HB: "HummingBird",
-  SW: "SideWinder",
-  SB: "SilverBullet",
-  RB: "RedBullet",
-  PD: "Phenom",
-  MG: "Magna",
-  DF: "Dragonfly",
-  PH: "PocketHawk",
-  DB: "Delta",
-  GB: "GoldenBullet",
-  MR: "Merak",
-};

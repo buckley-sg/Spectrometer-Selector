@@ -78,20 +78,36 @@ export function lookupGratingCodesByBlaze(
 }
 
 /**
- * Format a part number: XXNNNN-SSS-GGGG
- * XX = platform code, NNNN = literal placeholder, SSS = slit zero-padded, GGGG = grating code
+ * Format a part number: XXxxxx-SSS-GGGG
+ *   XX   = OtO platform code (e.g. "SE", "SW")
+ *   xxxx = model placeholder (customer specifies actual model)
+ *   SSS  = slit width in µm, zero-padded to 3 digits
+ *   GGGG = grating code (e.g. "DUV5", "NIRC")
  */
 export function formatPartNumber(platform: string, slitUm: number, gratingCode: string): string {
-  const sss = String(slitUm).padStart(3, "0");
-  return `${platform}xxxx-${sss}-${gratingCode}`;
+  return `${platform}xxxx-${String(slitUm).padStart(3, "0")}-${gratingCode}`;
 }
 
-/** Returns true if a blaze wavelength is inside the user's search window. */
+/** Returns true if a blaze wavelength falls inside the user's search window. */
 export function blazeInRange(blaze: number, wlMin: number, wlMax: number): boolean {
   return blaze >= wlMin && blaze <= wlMax;
 }
 
-/** Count how many blaze wavelengths in this result fall within the search range. */
+/**
+ * Sort comparator that orders blaze wavelengths (as numeric strings) with
+ * in-range blazes first, then ascending by wavelength. Used by ResultCard
+ * and CompareTable to present grating codes in a consistent order.
+ */
+export function blazeSortComparator(wlMin: number, wlMax: number) {
+  return (a: string, b: string): number => {
+    const aIn = blazeInRange(Number(a), wlMin, wlMax);
+    const bIn = blazeInRange(Number(b), wlMin, wlMax);
+    if (aIn !== bIn) return aIn ? -1 : 1;
+    return Number(a) - Number(b);
+  };
+}
+
+/** Count blaze wavelengths in this result that fall within the search range. */
 function countInRangeBlazes(r: { codesByBlaze: BlazeCodeMap }, wlMin: number, wlMax: number): number {
   return Object.keys(r.codesByBlaze)
     .map(Number)
@@ -106,13 +122,17 @@ export function recordId(r: EnrichedResult): string {
 }
 
 /**
- * Main search function.
+ * Main search function. Finds all spectrometer configurations that fully
+ * cover the requested wavelength range, recommends the largest slit width
+ * meeting the resolution spec, and returns results sorted by throughput
+ * with in-range blaze wavelengths prioritised.
  *
- * @param wlMin       - minimum wavelength required (nm)
- * @param wlMax       - maximum wavelength required (nm)
- * @param maxRes      - maximum acceptable resolution (nm, smaller = better)
- * @param records     - resolution records to search
- * @param overrides   - grating code override table
+ * @param wlMin           - minimum wavelength required (nm)
+ * @param wlMax           - maximum wavelength required (nm)
+ * @param maxRes          - maximum acceptable resolution (nm, smaller = better)
+ * @param records         - resolution records to search
+ * @param overrides       - grating code override table
+ * @param codeRangeLookup - grating code → wavelength window lookup
  */
 export function search(
   wlMin: number,

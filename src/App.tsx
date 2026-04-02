@@ -75,12 +75,6 @@ export default function App() {
         minHeight: "100vh",
       }}
     >
-      {/* Google Fonts */}
-      <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-      />
-
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <div

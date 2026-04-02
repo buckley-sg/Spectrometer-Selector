@@ -4,7 +4,7 @@
  * and grating codes.
  */
 import type { EnrichedResult } from "../logic/selector";
-import { blazeInRange, formatPartNumber } from "../logic/selector";
+import { blazeInRange, blazeSortComparator, formatPartNumber } from "../logic/selector";
 import type { CodeInfo } from "../types/spectrometer";
 import { BRAND, PRODUCT_COLORS } from "../brand";
 
@@ -107,6 +107,7 @@ export default function CompareTable({
                 number,
                 number
               >;
+              const blazeSort = blazeSortComparator(wlMin, wlMax);
               const color = PRODUCT_COLORS[r.evolveNames[0]] ?? "#333";
               return (
                 <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
@@ -123,13 +124,8 @@ export default function CompareTable({
                   </td>
                   <td style={{ padding: 8, whiteSpace: "nowrap" }}>
                     {r.gratingGrooves}g blz{" "}
-                    {r.blazeWavelengths
-                      .sort((a, b) => {
-                        const aIn = blazeInRange(a, wlMin, wlMax);
-                        const bIn = blazeInRange(b, wlMin, wlMax);
-                        if (aIn !== bIn) return aIn ? -1 : 1;
-                        return a - b;
-                      })
+                    {[...r.blazeWavelengths]
+                      .sort((a, b) => blazeSort(String(a), String(b)))
                       .map(b => blazeInRange(b, wlMin, wlMax) ? String(b) : `${b}*`)
                       .join("/")}
                   </td>
@@ -183,12 +179,7 @@ export default function CompareTable({
                   })}
                   <td style={{ padding: 8, fontSize: 11 }}>
                     {Object.entries(r.codesByBlaze)
-                      .sort(([a], [b]) => {
-                        const aIn = blazeInRange(Number(a), wlMin, wlMax);
-                        const bIn = blazeInRange(Number(b), wlMin, wlMax);
-                        if (aIn !== bIn) return aIn ? -1 : 1;
-                        return Number(a) - Number(b);
-                      })
+                      .sort(([a], [b]) => blazeSort(a, b))
                       .map(([blaze, codes]: [string, CodeInfo[]]) => {
                         const inRange = blazeInRange(Number(blaze), wlMin, wlMax);
                         const label = inRange ? `${blaze}nm` : `${blaze}nm*`;
