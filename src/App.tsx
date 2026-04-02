@@ -102,7 +102,7 @@ export default function App() {
               letterSpacing: -0.5,
             }}
           >
-            Spectrometer Selector
+            Evolve Selector
           </h1>
         </div>
         <p
