@@ -106,6 +106,19 @@ This runs the full pipeline: TypeScript check → Vite production build → Elec
 
 **Bumping the version**: Update `"version"` in `package.json` before building. The version appears in the installer filename and the app's About info.
 
+### GitHub Pages (Web Deployment)
+
+The app is deployed as a static site via GitHub Pages:
+
+**Live URL**: https://buckley-sg.github.io/Spectrometer-Selector/
+
+- Deploys automatically on every push to `master` via `.github/workflows/deploy.yml`
+- GitHub Pages source must be set to **"GitHub Actions"** in repo Settings → Pages (not "Deploy from a branch")
+- `vite.config.ts` uses `GITHUB_PAGES` env var to set `base: "/Spectrometer-Selector/"` for Pages builds, while keeping `base: "./"` for Electron/local builds
+- Repo is **public** (required for free GitHub Pages)
+- Works on any device with a browser — phones, tablets, Raspberry Pi, etc.
+- Preferred distribution method: just share the URL (no exe, no installer, no SmartScreen warnings)
+
 ### Electron Architecture
 - `electron-src/main.ts` → compiled to `electron/main.cjs` (CommonJS required because `package.json` has `"type": "module"`)
 - `electron-src/preload.ts` → compiled to `electron/preload.cjs`
