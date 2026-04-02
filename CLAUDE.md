@@ -1,7 +1,7 @@
-# Project: Spectrometer Selector
+# Project: Evolve Selector
 
 ## Overview
-A React + TypeScript tool for Evolve Sensing salespeople to quickly find the right spectrometer configuration. Given wavelength range and resolution requirements, it returns compatible platforms, gratings, and optimal slit widths ranked by throughput. Each result includes full ordering part numbers and grating code wavelength windows.
+A React + TypeScript tool for Evolve Sensing salespeople to quickly find the right spectrometer configuration. Given a wavelength range and target resolution, it returns compatible platforms, gratings, and optimal slit widths ranked by throughput. Each result includes full ordering part numbers and grating code wavelength windows.
 
 - **GitHub**: buckley-sg/Spectrometer-Selector (private)
 - **Branch**: master
@@ -58,7 +58,7 @@ The same grating (grooves/mm + blaze) can map to different codes depending on th
 2. Filter records whose bandwidth accommodates the requested range
 3. For each surviving record, find the **largest slit** that meets the resolution spec (maximises throughput)
 4. If no slit meets the spec, classify as a "near miss" using the narrowest slit
-5. Sort results: in-range blaze count > slit width (throughput) > resolution
+5. Sort results: slit width (throughput) > in-range blaze count > resolution
 
 ### Shared helpers
 - `blazeSortComparator()` — single sort function used by ResultCard and CompareTable to order blazes (in-range first, then ascending)

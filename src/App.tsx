@@ -1,5 +1,5 @@
 /**
- * App — main Spectrometer Selector application.
+ * App — main Evolve Selector application.
  *
  * Wires together the search form, selector logic, result cards,
  * and comparison table.

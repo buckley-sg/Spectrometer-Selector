@@ -1,5 +1,5 @@
 /**
- * SearchForm — three-input form for wavelength range and resolution.
+ * SearchForm — three-input form for wavelength range and target resolution.
  * Shows the computed required bandwidth below the inputs.
  */
 import { BRAND } from "../brand";

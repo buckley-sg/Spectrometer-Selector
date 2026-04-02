@@ -1,5 +1,5 @@
 /**
- * Type definitions for the Spectrometer Selector.
+ * Type definitions for the Evolve Selector.
  *
  * Two shapes exist for resolution records:
  *   - CompactResolutionRecord  – minified keys stored in the JSON data files

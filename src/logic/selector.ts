@@ -1,7 +1,7 @@
 /**
  * Core spectrometer selector logic.
  *
- * Given a wavelength range and maximum resolution, finds all Evolve
+ * Given a wavelength range and target resolution, finds all Evolve
  * spectrometer configurations that fully cover the range, recommending
  * the largest slit width that still meets the resolution spec
  * (maximising optical throughput).

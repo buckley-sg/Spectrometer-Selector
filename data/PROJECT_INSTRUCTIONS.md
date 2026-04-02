@@ -65,7 +65,7 @@ When ordering a spectrometer from OtO, you specify the grating code. The naming 
 
 ### React App
 - `spectrometer_selector.jsx` — Self-contained React component with all data embedded. Features:
-  - Three-input search (min wavelength, max wavelength, max resolution)
+  - Three-input search (min wavelength, max wavelength, target resolution)
   - Results ranked by throughput (largest viable slit first)
   - Near-miss display when no exact matches exist
   - Side-by-side comparison table (checkbox any results to compare)

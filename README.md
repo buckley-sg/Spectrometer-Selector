@@ -1,8 +1,8 @@
-# Spectrometer Selector
+# Evolve Selector
 
 A React + TypeScript tool for Evolve Sensing salespeople to quickly find the right spectrometer configuration for a customer's requirements.
 
-Given a wavelength range and resolution specification, it returns all compatible Evolve spectrometer platforms, grating configurations, and optimal slit widths — ranked by optical throughput. Each result includes full ordering part numbers and grating code wavelength windows.
+Given a wavelength range and target resolution, it returns all compatible Evolve spectrometer platforms, grating configurations, and optimal slit widths — ranked by optical throughput. Each result includes full ordering part numbers and grating code wavelength windows.
 
 ## Quick Start
 
@@ -22,7 +22,7 @@ npm run preview   # preview the production build
 
 ## How It Works
 
-1. Enter **min wavelength**, **max wavelength**, and **max resolution** (nm)
+1. Enter **min wavelength**, **max wavelength**, and **target resolution** (nm)
 2. The selector searches 68 spectrometer configurations across 13 Evolve platforms
 3. Results are ranked by throughput (largest viable slit width first), with in-range blaze wavelengths prioritised
 4. Each result shows:
